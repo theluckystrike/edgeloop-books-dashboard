@@ -7,6 +7,10 @@
 main{max-width:1280px;margin:0 auto;padding:28px}
 h1{font-size:28px;margin:0 0 6px}h2{font-size:20px;margin:28px 0 10px}h3{font-size:16px;margin:0 0 10px;color:var(--acc)}
 .mute{color:var(--mute)}.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.nav{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 18px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.nav button{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:9px 18px;font:600 15px -apple-system,sans-serif;cursor:pointer}
+.nav button.on{background:#2a3a4f;border-color:var(--acc);color:#fff}
+.view{display:none}.view.on{display:block}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:16px 0}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}.kpi b{font-size:24px;display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin:14px 0}
@@ -21,17 +25,37 @@ th{color:var(--mute);font-weight:600}
 code{background:#1d1d21;padding:1px 5px;border-radius:5px;font-size:13px}
 .bar{height:10px;background:#1d1d21;border-radius:999px;overflow:hidden;margin-top:8px}
 .bar>div{height:100%;background:linear-gradient(90deg,var(--acc),var(--ok));width:100.0%}
+.pill{display:inline-block;background:#1b2c25;color:var(--ok);border:1px solid #2b4a3d;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:600;margin-left:6px}
 </style></head><body><main>
 <h1>EdgeLoop Book Series, G4 Translation Dashboard</h1>
-<p class="mute">Updated 26 Nov 2026 &middot; Plain summary of all 140 translated books, QA checks, and exact GPU spend.</p>
+<p class="mute">Updated 26 Nov 2026 &middot; Plain summary of all 140 translated books, QA checks, and real API cost comparison.</p>
+
+<div class="nav">
+  <button data-v="overview" class="on">Overview</button>
+  <button data-v="cost">Cost Breakdown <span class="pill">~$4.80 total</span></button>
+</div>
 
 <div class="kpis">
-  <div class="kpi"><span class="mute">G4 Model</span><b>Qwen3-30B-A3B</b><span class="mute">RTX PRO 6000 Blackwell (96 GB)</span></div>
+  <div class="kpi"><span class="mute">Actual Compute Value</span><b class="ok">~$4.80 USD</b><span class="mute">48.07 CCU ($0.034 per book)</span></div>
+  <div class="kpi"><span class="mute">Google API Equivalent</span><b>$42 to $168</b><span class="mute">9x less than Flash, 35x less than Pro</span></div>
   <div class="kpi"><span class="mute">Books Translated</span><b class="ok">140 / 140</b><span class="mute">7 books across 20 languages (100.0%)</span><div class="bar"><div></div></div></div>
   <div class="kpi"><span class="mute">Chunks Passing QA</span><b class="ok">7,911 / 7,980</b><span class="mute">99.14% pass rate (69 flagged)</span></div>
-  <div class="kpi"><span class="mute">Throughput</span><b>2,067.8 tok/s</b><span class="mute">15.19M output tokens</span></div>
-  <div class="kpi"><span class="mute">Exact G4 CCU Spend</span><b class="ok">48.07 CCU</b><span class="mute">287 min (4.78 G4-h) &middot; 0.276 CCU per book</span></div>
+  <div class="kpi"><span class="mute">Throughput</span><b>2,067.8 tok/s</b><span class="mute">15.19M output tokens (Qwen3-30B-A3B)</span></div>
   <div class="kpi"><span class="mute">Archive Status</span><b style="font-size:15px">Ready (17.43 MB) in edgeloop-books-21langs.zip</b><span class="mute">21 languages (EN + 20)</span></div>
+</div>
+
+<section class="view on" id="view-overview">
+
+<h2>Real Dollar Cost vs Google APIs</h2>
+<div class="card" style="border-color:var(--ok)">
+  <table>
+    <tr><th>Option</th><th>Pricing Basis</th><th>Estimated Total</th><th>Per Book (140 books)</th><th>Savings vs Colab G4</th></tr>
+    <tr><td><b>Actual Colab G4 Run</b></td><td>48.07 CCU at ~$0.10 per CCU ($9.99 per 100 CCU)</td><td class="ok"><b>~$4.80</b></td><td class="ok"><b>$0.034</b></td><td class="ok">Baseline</td></tr>
+    <tr><td><b>Google Gemini 2.5 Flash API</b></td><td>$0.30 per 1M input, $2.50 per 1M output (~13.2M in, 15.19M out)</td><td><b>~$42</b> (~$21 Batch API)</td><td>$0.30 ($0.15 batch)</td><td>~9x more expensive</td></tr>
+    <tr><td><b>Google Gemini 2.5 Pro API</b></td><td>$1.25 per 1M input, $10.00 per 1M output (under 200K context)</td><td><b>~$168</b> (~$84 Batch API)</td><td>$1.20 ($0.60 batch)</td><td>~35x more expensive</td></tr>
+    <tr><td><b>Google Cloud Translation API</b></td><td>$20 per 1M characters (~50M source characters across 20 languages)</td><td><b>~$1,000</b></td><td>$7.14</td><td>~208x more expensive</td></tr>
+  </table>
+  <p class="mute" style="margin:10px 0 0">Switch to the <b>Cost Breakdown</b> tab above for the full 8-job Colab session ledger, unit economics, and token math.</p>
 </div>
 
 <h2>Biggest Insights and Summary</h2>
@@ -278,7 +302,31 @@ code{background:#1d1d21;padding:1px 5px;border-radius:5px;font-size:13px}
 <p>Sebutkan jenisnya sebelum Anda melepaskan. Diagnostik akan menunjukkan apakah pelepasan terakhir berada dalam rentang yang bermanfaat. Diagnostik tidak akan menyebutkan jenisnya untuk Anda. Seseorang mendorong. Anda mundur. Anda biarkan mereka. Gesekan berkurang dan Anda merasa dewasa. Pada masalah jenis yang tepat, itu benar-benar tepat, dan merupakan salah satu hal paling membebaskan yang bisa dipelaja</p></div>
 </div>
 
-<h2>5. Google Ultra CCU Usage and Unit Economics</h2>
+<h2>5. Back-Translation Semantic Fidelity</h2>
+<div class="card">
+  <p>60 sampled chunks &middot; Average semantic similarity <b class='ok'>0.6569</b> &middot; Lowest score <b>0.4874</b></p>
+</div>
+
+</section>
+
+<section class="view" id="view-cost">
+
+<h2>Real API Cost Comparison (48.07 CCU vs Google Paid APIs)</h2>
+<div class="card" style="border-color:var(--ok)">
+  <p>This run processed roughly <b>13.2M input tokens</b> (417,032 source words across 20 languages plus prompt and glossary overhead across 8,180 chunk calls) and generated <b>15.19M output tokens</b> across 140 books, 140 QA retries, and 60 back-translation checks.</p>
+  <table>
+    <tr><th>Option</th><th>Pricing Basis</th><th>Input Cost</th><th>Output Cost</th><th>Estimated Total</th><th>Per Book (140)</th></tr>
+    <tr><td><b>Actual Colab G4 Run</b></td><td>48.07 CCU at ~$0.10 per CCU ($9.99 per 100 CCU)</td><td>Included</td><td>Included</td><td class="ok"><b>~$4.80</b></td><td class="ok"><b>$0.034</b></td></tr>
+    <tr><td><b>Gemini 2.5 Flash (Standard)</b></td><td>$0.30 per 1M in, $2.50 per 1M out</td><td>$3.96</td><td>$37.98</td><td><b>~$41.94</b></td><td>$0.300</td></tr>
+    <tr><td><b>Gemini 2.5 Flash (Batch 50% off)</b></td><td>$0.15 per 1M in, $1.25 per 1M out</td><td>$1.98</td><td>$18.99</td><td><b>~$20.97</b></td><td>$0.150</td></tr>
+    <tr><td><b>Gemini 2.5 Pro (Standard)</b></td><td>$1.25 per 1M in, $10.00 per 1M out</td><td>$16.50</td><td>$151.90</td><td><b>~$168.40</b></td><td>$1.203</td></tr>
+    <tr><td><b>Gemini 2.5 Pro (Batch 50% off)</b></td><td>$0.625 per 1M in, $5.00 per 1M out</td><td>$8.25</td><td>$75.95</td><td><b>~$84.20</b></td><td>$0.601</td></tr>
+    <tr><td><b>Google Cloud Translation API</b></td><td>$20 per 1M characters (~50M chars total)</td><td>Flat char rate</td><td>Included</td><td><b>~$1,000.00</b></td><td>$7.143</td></tr>
+  </table>
+  <p class="mute" style="margin:10px 0 0">Running Qwen3-30B-A3B on a Colab G4 GPU (RTX PRO 6000 Blackwell, 96 GB) cost roughly <b>9x less than Gemini 2.5 Flash</b>, <b>35x less than Gemini 2.5 Pro</b>, and <b>over 200x less than Google Cloud Translation API</b>.</p>
+</div>
+
+<h2>Google Ultra CCU Usage and Exact Session Ledger</h2>
 <div class="card">
   <div class="kpis">
     <div class="kpi"><span class="mute">Total Project CCU</span><b class="ok">48.07 CCU</b><span class="mute">8 completed G4 VMs (287 min)</span></div>
@@ -302,12 +350,16 @@ code{background:#1d1d21;padding:1px 5px;border-radius:5px;font-size:13px}
   </table>
 </div>
 
-<h2>6. Back-Translation Semantic Fidelity</h2>
-<div class="card">
-  <p>60 sampled chunks &middot; Average semantic similarity <b class='ok'>0.6569</b> &middot; Lowest score <b>0.4874</b></p>
-</div>
+</section>
 
 <script>
+function setView(v){
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='view-'+v));
+  if(v==='cost'){history.replaceState(null,'','#cost')}else{history.replaceState(null,'','#overview')}
+}
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+if(location.hash==='#cost')setView('cost');
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('.docpane').forEach(p=>p.classList.toggle('on',p.id==='doc-'+b.dataset.l));
