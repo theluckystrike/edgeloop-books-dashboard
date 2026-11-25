@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EdgeLoop 8-Book Series, G4 Translation Dashboard</title>
+<style>
+:root{--bg:#0b0b0c;--card:#151517;--line:#2a2a2e;--fg:#ececf0;--mute:#9a9aa3;--ok:#5ad19a;--warn:#f2c14e;--bad:#ff6b6b;--acc:#7cc4ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 -apple-system,Inter,Segoe UI,sans-serif}
+main{max-width:1280px;margin:0 auto;padding:28px}
+h1{font-size:28px;margin:0 0 6px}h2{font-size:20px;margin:28px 0 10px}h3{font-size:16px;margin:0 0 10px;color:var(--acc)}
+.mute{color:var(--mute)}.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:16px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}.kpi b{font-size:24px;display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin:14px 0}
+table{width:100%;border-collapse:collapse;margin:6px 0;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+th{color:var(--mute);font-weight:600}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+.tabs button{background:#101012;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font:600 14px -apple-system,sans-serif;cursor:pointer}
+.tabs button.on{background:#2a3a4f;border-color:var(--acc)}
+.docpane{display:none;background:#101012;border:1px solid var(--line);border-radius:10px;padding:20px;max-height:520px;overflow:auto}
+.docpane.on{display:block}
+code{background:#1d1d21;padding:1px 5px;border-radius:5px;font-size:13px}
+.bar{height:10px;background:#1d1d21;border-radius:999px;overflow:hidden;margin-top:8px}
+.bar>div{height:100%;background:linear-gradient(90deg,var(--acc),var(--ok));width:100.0%}
+</style></head><body><main>
+<h1>EdgeLoop Book Series, G4 Translation Dashboard</h1>
+<p class="mute">Updated 26 Nov 2026 &middot; Plain summary of all 140 translated books, QA checks, and exact GPU spend.</p>
+
+<div class="kpis">
+  <div class="kpi"><span class="mute">G4 Model</span><b>Qwen3-30B-A3B</b><span class="mute">RTX PRO 6000 Blackwell (96 GB)</span></div>
+  <div class="kpi"><span class="mute">Books Translated</span><b class="ok">140 / 140</b><span class="mute">7 books across 20 languages (100.0%)</span><div class="bar"><div></div></div></div>
+  <div class="kpi"><span class="mute">Chunks Passing QA</span><b class="ok">7,911 / 7,980</b><span class="mute">99.14% pass rate (69 flagged)</span></div>
+  <div class="kpi"><span class="mute">Throughput</span><b>2,067.8 tok/s</b><span class="mute">15.19M output tokens</span></div>
+  <div class="kpi"><span class="mute">Exact G4 CCU Spend</span><b class="ok">48.07 CCU</b><span class="mute">287 min (4.78 G4-h) &middot; 0.276 CCU per book</span></div>
+  <div class="kpi"><span class="mute">Archive Status</span><b style="font-size:15px">Ready (17.43 MB) in edgeloop-books-21langs.zip</b><span class="mute">21 languages (EN + 20)</span></div>
+</div>
+
+<h2>Biggest Insights and Summary</h2>
+<div class="card" style="border-color:var(--acc)">
+  <h3>Biggest Insights</h3>
+  <ul>
+    <li>Sending all 399 chunks of a language in a single vLLM batch on an RTX PRO 6000 Blackwell (96 GB) reached 2,150 to 2,396 output tokens per second. That translated 7 full books (417,032 words) in 3.1 to 5.5 minutes for European and CJK languages.</li>
+    <li>Switching mid-run from 2-language batches to 6-language batches cut out 4 cold-start FlashInfer Blackwell JIT cycles, saving roughly 45 minutes and 8 CCU with zero downtime.</li>
+    <li>Paragraph-aware chunking at 1,100 words (max 1,350) put every book back together with zero lost text and zero context-window cutoffs across all 7,980 chunks.</li>
+    <li>Checking the source files explained the exact 5-word count gap between 484,408 and 484,413. Book 1 had five non-breaking spaces (U+00A0) after &quot;No.&quot;, and Book 2 had one repeated tagline on lines 4750 and 4752.</li>
+    <li>Most first-pass QA flags (722 of 852, or 85%) were extra H1 titles added to mid-book chunks. A targeted cleanup script plus one 140-chunk G4 retry lifted the QA pass rate from 89.32% to 99.14% (7,911 of 7,980 chunks).</li>
+    <li>Back-translation checks across 60 sampled chunks (3 per language across 20 languages) averaged 0.7115 token F1 and 0.6973 n-gram cosine similarity (0.6569 composite). European languages scored 0.69 to 0.74, while structurally distant CJK languages scored 0.56 to 0.61.</li>
+  </ul>
+  <h3>What Can Still Improve</h3>
+  <ul>
+    <li>Add Book 3 (<code>03-cycle-complete.md</code>, 67,381 words) to <code>source/</code> and run one incremental G4 pass to finish the full 8-book, 160-translation set.</li>
+    <li>Remove the book title header from the prompt in future runs so the model stops adding stray mid-book H1 headings during generation instead of fixing them afterward.</li>
+    <li>Run one small 69-chunk retry (mostly zh-cn, zh-tw, tr, and ko) to push chunk QA from 99.14% past 99.9%.</li>
+    <li>Remove the duplicate line in Book 2 (<code>02-enough.md</code> lines 4750 and 4752) and normalize the five U+00A0 non-breaking spaces in Book 1 before final print layout.</li>
+    <li>Have native speakers edit idioms, chapter titles, and regional tone (especially pt vs pt-br, zh-cn vs zh-tw, ja and ko honorifics, and ar and fa phrasing) before commercial release.</li>
+  </ul>
+  <h3>Honest Rating</h3>
+  <p><b class="ok" style="font-size:20px">93 / 100. Solid end-to-end book translation pipeline (4 points off because Book 3 was missing from the source drop, 2 points off for 69 remaining minor chunk QA flags out of 7,980, and 1 point off because a native human editor has not reviewed it yet).</b></p>
+</div>
+
+<h2>1. How the Pipeline Ran</h2>
+<div class="card"><ol>
+<li>Read <code>chunks/manifest.json</code> before starting any job.</li>
+<li>Split each book at heading and paragraph breaks with <code>scripts/chunk_books.py</code>, targeting 1,100 words per chunk with a 1,350-word cap.</li>
+<li>Built 10 G4 batch scripts with <code>scripts/build_g4_book_job.py</code>, starting at 2 target languages per batch and consolidating to 6-language batches mid-run.</li>
+<li>Ran up to 3 parallel G4 VMs with <code>gpu run --gpu G4 --max-min 90</code> while keeping the CCU balance above the 50 CCU floor.</li>
+<li>Streamed each finished book as a base64 gzipped tar block and unpacked every log right away with <code>scripts/unpack_books.py</code>.</li>
+<li>Ran <code>scripts/qa_books.py</code> after each batch to verify heading counts, English leak under 8%, script ratio at least 80%, length ratio from 0.60 to 1.95, and zero repetition loops.</li>
+<li>Built a targeted G4 retry job from <code>qa/qa_report.json</code> for flagged chunks until the pass rate crossed 99%.</li>
+<li>Ran back-translation checks on 60 sampled chunks across all 20 languages.</li>
+<li>Packaged all 21 languages, QA reports, glossary, and this dashboard into <code>edgeloop-books-21langs.zip</code>.</li>
+</ol></div>
+
+<h2>2. Source Book Inventory (7 of 8 Books Present)</h2>
+<div class="card"><table>
+<tr><th>#</th><th>Book Title &amp; Slug</th><th>Words</th><th>Chunks</th><th>Languages Done</th><th>Status</th></tr>
+<tr><td>1</td><td><b>Let Them, Then Me</b><br><code class='mute'>01-let-them-then-me.md</code></td><td>65,353</td><td>67</td><td class='ok'><b>20 / 20</b></td><td>Ready on disk</td></tr><tr><td>2</td><td><b>Enough</b><br><code class='mute'>02-enough.md</code></td><td>50,759</td><td>49</td><td class='ok'><b>20 / 20</b></td><td>Ready on disk</td></tr><tr><td>3</td><td><b>Cycle Complete</b><br><code class='mute'>03-cycle-complete.md</code></td><td>67,381 (canonical)</td><td>0</td><td class='bad'><b>MISSING</b></td><td class='bad'>Source file not in Downloads. Drop file in source/ to translate.</td></tr><tr><td>4</td><td><b>Edge Habits</b><br><code class='mute'>04-edge-habits.md</code></td><td>68,360</td><td>62</td><td class='ok'><b>20 / 20</b></td><td>Ready on disk</td></tr><tr><td>5</td><td><b>Selective Care</b><br><code class='mute'>05-selective-care.md</code></td><td>55,902</td><td>52</td><td class='ok'><b>20 / 20</b></td><td>Ready on disk</td></tr><tr><td>6</td><td><b>Layer Talk</b><br><code class='mute'>06-layer-talk.md</code></td><td>66,350</td><td>62</td><td class='ok'><b>20 / 20</b></td><td>Ready on disk</td></tr><tr><td>7</td><td><b>Ground Floor</b><br><code class='mute'>07-ground-floor.md</code></td><td>59,376</td><td>59</td><td class='ok'><b>20 / 20</b></td><td>Ready on disk</td></tr><tr><td>8</td><td><b>Full Circle</b><br><code class='mute'>08-full-circle.md</code></td><td>50,932</td><td>48</td><td class='ok'><b>20 / 20</b></td><td>Ready on disk</td></tr>
+</table></div>
+
+<h2>3. Language Translation and QA Matrix (20 Target Languages)</h2>
+<div class="card"><table>
+<tr><th>Code</th><th>Language</th><th>Dir</th><th>Books</th><th>Chunks</th><th>QA Gate</th><th>Throughput</th><th>G4 Time</th></tr>
+<tr><td><code>es</code></td><td>Spanish (Español)</td><td>LTR</td><td class='ok'><b>7 / 7</b></td><td>399 / 399</td><td class='ok'>399 pass / 0 fail (100.0%)</td><td>2,346.1 tok/s</td><td>4.4 min</td></tr><tr><td><code>fr</code></td><td>French (Français)</td><td>LTR</td><td class='ok'><b>7 / 7</b></td><td>399 / 399</td><td class='ok'>399 pass / 0 fail (100.0%)</td><td>142.0 tok/s</td><td>0.1 min</td></tr><tr><td><code>de</code></td><td>German (Deutsch)</td><td>LTR</td><td class='ok'><b>7 / 7</b></td><td>399 / 399</td><td class='ok'>399 pass / 0 fail (100.0%)</td><td>142.1 tok/s</td><td>0.2 min</td></tr><tr><td><code>it</code></td><td>Italian (Italiano)</td><td>LTR</td><td class='ok'><b>7 / 7</b></td><td>399 / 399</td><td class='ok'>399 pass / 0 fail (100.0%)</td><td>2,290.9 tok/s</td><td>5.0 min</td></tr><tr><td><code>pt</code></td><td>Portuguese (PT) (Português (PT))</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>398 pass / 1 fail (99.8%)</td><td>139.6 tok/s</td><td>0.7 min</td></tr><tr><td><code>pt-br</code></td><td>Portuguese (BR) (Português (BR))</td><td>LTR</td><td class='ok'><b>7 / 7</b></td><td>399 / 399</td><td class='ok'>399 pass / 0 fail (100.0%)</td><td>142.9 tok/s</td><td>0.2 min</td></tr><tr><td><code>nl</code></td><td>Dutch (Nederlands)</td><td>LTR</td><td class='ok'><b>7 / 7</b></td><td>399 / 399</td><td class='ok'>399 pass / 0 fail (100.0%)</td><td>2,272.0 tok/s</td><td>5.3 min</td></tr><tr><td><code>pl</code></td><td>Polish (Polski)</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>397 pass / 2 fail (99.5%)</td><td>211.7 tok/s</td><td>0.3 min</td></tr><tr><td><code>ru</code></td><td>Russian (Русский)</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>397 pass / 2 fail (99.5%)</td><td>238.4 tok/s</td><td>0.2 min</td></tr><tr><td><code>uk</code></td><td>Ukrainian (Українська)</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>390 pass / 9 fail (97.7%)</td><td>537.3 tok/s</td><td>0.8 min</td></tr><tr><td><code>ar</code></td><td>Arabic (العربية)</td><td>RTL</td><td class='ok'><b>7 / 7</b></td><td>399 / 399</td><td class='ok'>399 pass / 0 fail (100.0%)</td><td>210.9 tok/s</td><td>0.3 min</td></tr><tr><td><code>fa</code></td><td>Persian (فارسی)</td><td>RTL</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>391 pass / 8 fail (98.0%)</td><td>436.8 tok/s</td><td>1.2 min</td></tr><tr><td><code>zh-cn</code></td><td>Chinese (Simplified) (简体中文)</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>374 pass / 25 fail (93.7%)</td><td>1,427.8 tok/s</td><td>0.7 min</td></tr><tr><td><code>zh-tw</code></td><td>Chinese (Traditional) (繁體中文)</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>393 pass / 6 fail (98.5%)</td><td>759.7 tok/s</td><td>0.4 min</td></tr><tr><td><code>ja</code></td><td>Japanese (日本語)</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>398 pass / 1 fail (99.8%)</td><td>389.3 tok/s</td><td>0.4 min</td></tr><tr><td><code>ko</code></td><td>Korean (한국어)</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>390 pass / 9 fail (97.7%)</td><td>596.6 tok/s</td><td>0.6 min</td></tr><tr><td><code>id</code></td><td>Indonesian (Bahasa Indonesia)</td><td>LTR</td><td class='ok'><b>7 / 7</b></td><td>399 / 399</td><td class='ok'>399 pass / 0 fail (100.0%)</td><td>2,191.1 tok/s</td><td>5.7 min</td></tr><tr><td><code>vi</code></td><td>Vietnamese (Tiếng Việt)</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>397 pass / 2 fail (99.5%)</td><td>250.9 tok/s</td><td>0.3 min</td></tr><tr><td><code>th</code></td><td>Thai (ไทย)</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>398 pass / 1 fail (99.8%)</td><td>243.3 tok/s</td><td>0.4 min</td></tr><tr><td><code>tr</code></td><td>Turkish (Türkçe)</td><td>LTR</td><td class='warn'><b>7 / 7</b></td><td>399 / 399</td><td class='warn'>396 pass / 3 fail (99.2%)</td><td>443.8 tok/s</td><td>1.0 min</td></tr>
+</table></div>
+
+<h2>4. Live Translated Sample (Book 1, <code>01-let-them-then-me</code>)</h2>
+<div class="card">
+  <div class="tabs"><button data-l="en" class="on">English</button><button data-l="es" class="">Español</button><button data-l="fr" class="">Français</button><button data-l="de" class="">Deutsch</button><button data-l="ru" class="">Русский</button><button data-l="ar" class="">العربية (RTL)</button><button data-l="zh-cn" class="">简体中文</button><button data-l="ja" class="">日本語</button><button data-l="th" class="">ไทย</button><button data-l="id" class="">Bahasa Indonesia</button></div>
+  <div class="docpane on" id="doc-en"><h1>Let Them, Then Me</h1>
+<h3>The Classifier for Control, Avoidance, Boundary, and Safety</h3>
+<p><em>An EdgeLoop Book</em></p>
+<p><strong>By KJS</strong></p>
+<p><em>Author, Developer, Data Scientist, Researcher and Restaurateur</em></p>
+<h2>How to use this book</h2>
+<p><strong>The series in one line.</strong> There are two ways to live with AI. The old way is to learn it and do the work yourself. The new way is to make it happen without learning it at all. Both fail: the first becomes irrelevant, the second leaves you with no knowledge behind you. Every book here teaches the middle. Take the tool, keep the knowledge, and know which part of the work stays yours.</p>
+<p>This is the first of eight, and it is the release. Everything in this series rests on the ability to let go of what is not yours to hold, and to keep what is.</p>
+<p><strong>Core insight: Release feels like wisdom. It is sometimes a mistake.</strong></p>
+<p><strong>Closer: Name the type before you release. If you cannot name it in four seconds, you are not releasing, you are drifting.</strong></p>
+<p><strong>Goal: To hold what is yours, let go of what is not, and know which one you are doing before you do it.</strong></p>
+<p>That skill was written before the assistant existed, and it still works. What changed is the conditions and the cost of getting it wrong. Friction used to do some of the work for you, and now something will draft the warm reply before you have decided what you feel, three versions of it, each one more accommodating than the last. Nothing about the insight has to change. You still watch what a person repeatedly does, because repeated behavior is data and everything else is noise. What has to change is that the tool will now do the part where you pretend, and it will do it faster than you can notice.</p>
+<p>The tool can draft the message. It cannot tell you whether you meant it.</p>
+<p>Release feels like wisdom. It is sometimes a mistake.</p>
+<p>The move is the same. The type is not.</p>
+<p>Name the type before you release. The diagnostic will show whether the last release was inside the useful range. It will not name the type for you. Someone pushes. You step back. You let them. The friction drops and you feel mature. On the right kind of problem, that is exactly correct, and it is one of the most freeing things a person can learn. On the wrong kind, you just abandoned something that was yours to hold, and you will pay for it later, with interest, in a currency that is usually other people&#x27;s time and trust as well as your own.</p>
+<p>The advice to let people be, to stop managing what you cannot control, is good advice. It is also incomplete in a way that does real damage, because it comes with no instructions for telling the two kinds of p</p></div><div class="docpane" id="doc-es"><h1>Déjalos, luego yo</h1>
+<h3>El clasificador para el control, la evitación, los límites y la seguridad</h3>
+<p><em>Un libro de EdgeLoop</em></p>
+<p><strong>Por KJS</strong></p>
+<p><em>Autor, Desarrollador, Científico de Datos, Investigador y Restaurador</em></p>
+<h2>Cómo usar este libro</h2>
+<p><strong>La serie en una frase.</strong> Hay dos formas de vivir con la IA. La forma antigua es aprenderla y hacer el trabajo tú mismo. La nueva forma es hacer que suceda sin aprender nada en absoluto. Ambas fallan: la primera se vuelve irrelevante, la segunda te deja sin conocimiento detrás. Cada libro de esta serie enseña el camino intermedio. Toma la herramienta, conserva el conocimiento, y sé cuál parte del trabajo sigue siendo tuya.</p>
+<p>Este es el primero de ocho, y es el lanzamiento. Todo en esta serie descansa en la capacidad de soltar lo que no es tuyo para sostener, y mantener lo que sí lo es.</p>
+<p><strong>Insight clave: Soltar siente como sabiduría. A veces es un error.</strong></p>
+<p><strong>Más cerca: Nombra el tipo antes de soltarlo. Si no puedes nombrarlo en cuatro segundos, no estás soltando, estás flotando.</strong></p>
+<p><strong>Objetivo: Mantener lo que es tuyo, soltar lo que no lo es, y saber cuál estás haciendo antes de hacerlo.</strong></p>
+<p>Esa habilidad se escribió antes de que existiera el asistente, y aún funciona. Lo que ha cambiado son las condiciones y el costo de equivocarse. Antes, la fricción hacía parte del trabajo por ti, y ahora algo ya redactará la respuesta cálida antes de que hayas decidido qué sientes, tres versiones de ella, cada una más comprensiva que la anterior. Nada del insight tiene que cambiar. Tú sigues observando lo que una persona hace una y otra vez, porque el comportamiento repetido es datos y todo lo demás es ruido. Lo que debe cambiar es que ahora la herramienta hará la parte donde fingías, y lo hará más rápido de lo que puedes notar.</p>
+<p>La herramienta puede redactar el mensaje. No puede decirte si lo sentías de verdad.</p>
+<p>Soltar siente como sabiduría. A veces es un error.</p>
+<p>El movimiento es el mismo. El tipo no lo es.</p>
+<p>Nombra el tipo antes de soltar. El diagnóstico mostrará si la última liberación estuvo dentro del rango útil. No te dirá el tipo. Alguien empuja. Tú retrocedes. Dejas que lo hagan. La fricción baja y sientes madurez. En el tipo correcto de problema, eso es exactamente correcto, y es una de las cosas más liberadoras que una persona puede aprender. En el tipo incorrecto, simplemente abandonaste algo que era tuyo para sostener, y lo pagarás después, con intereses, en una moneda que normalmente es el tiempo y la confianza de otras personas, así como la tuya.</p>
+<p>El consejo de dejar que los demás sean, de dejar de gestionar lo que no puedes</p></div><div class="docpane" id="doc-fr"><h1>Laissez-les, puis moi</h1>
+<h3>Le classificateur du contrôle, de l’évitement, des limites et de la sécurité</h3>
+<p><em>Un livre EdgeLoop</em></p>
+<p><strong>Par KJS</strong></p>
+<p><em>Écrivain, développeur, scientifique des données, chercheur et restaurateur</em></p>
+<h2>Comment utiliser ce livre</h2>
+<p><strong>La série en une phrase.</strong> Il existe deux façons de vivre avec l’IA. La vieille façon consiste à tout apprendre et à faire le travail soi-même. La nouvelle consiste à faire advenir les choses sans rien apprendre du tout. Les deux échouent : la première devient obsolète, la seconde vous laisse sans connaissance derrière vous. Chaque livre de cette série enseigne la voie médiane. Prenez l’outil, conservez la connaissance, et sachez quelle partie du travail reste la vôtre.</p>
+<p>C’est le premier des huit, et c’est la sortie. Tout dans cette série repose sur la capacité à lâcher prise sur ce qui ne vous appartient pas, et à garder ce qui vous est dû.</p>
+<p><strong>Idée centrale : Lâcher prise ressemble à de la sagesse. C’est parfois une erreur.</strong></p>
+<p><strong>Plus précisément : Nommez le type avant de lâcher prise. Si vous ne pouvez pas le nommer en quatre secondes, vous ne lâchez pas, vous dérivez.</strong></p>
+<p><strong>Objectif : Tenir ce qui vous appartient, lâcher ce qui ne vous appartient pas, et savoir lequel des deux vous faites avant même de le faire.</strong></p>
+<p>Cette compétence a été formulée bien avant l’existence de l’assistant, et elle fonctionne encore. Ce qui a changé, c’est le contexte et le coût d’une erreur. Le frottement faisait autrefois une partie du travail pour vous, et maintenant quelque chose rédige déjà la réponse chaleureuse avant que vous n’ayez décidé ce que vous ressentez, trois versions, chacune plus accommodante que la précédente. Rien dans l’insight n’a besoin de changer. Vous observez toujours ce qu’une personne fait de manière répétée, car le comportement répété est des données, et tout le reste est du bruit. Ce qui doit changer, c’est que l’outil va désormais faire la partie où vous feigniez, et il le fera plus vite que vous ne pouvez le remarquer.</p>
+<p>L’outil peut rédiger le message. Il ne peut pas vous dire si vous le pensiez vraiment.</p>
+<p>Lâcher prise ressemble à de la sagesse. C’est parfois une erreur.</p>
+<p>Le geste est le même. Le type n’est pas le même.</p>
+<p>Nommez le type avant de lâcher prise. Le diagnostic indiquera si le dernier lâcher prise était dans la plage utile. Il ne vous nommera pas le type. Quelqu’un pousse. Vous reculez. Vous le laissez faire. Le frottement disparaît, et vous vous sentez mûr. Sur le bon type de problème, c’est exactement correct, et c’est l’une des choses les plus libératrices qu’une personne puisse appren</p></div><div class="docpane" id="doc-de"><h1>Lass sie, dann mich</h1>
+<h3>Der Klassifikator für Kontrolle, Vermeidung, Grenze und Sicherheit</h3>
+<p><em>Ein EdgeLoop-Buch</em></p>
+<p><strong>Von KJS</strong></p>
+<p><em>Autor, Entwickler, Datenwissenschaftler, Forscher und Restaurantbetreiber</em></p>
+<h2>Wie man dieses Buch nutzt</h2>
+<p><strong>Die Serie in einem Satz.</strong> Es gibt zwei Wege, mit KI zu leben. Der alte Weg ist, sie zu lernen und die Arbeit selbst zu erledigen. Der neue Weg ist, es ohne jegliches Lernen zu bewirken. Beide Wege scheitern: der erste wird überflüssig, der zweite lässt dich ohne Wissen zurück. Jedes Buch dieser Reihe lehrt den Mittelweg. Nimm das Werkzeug, behalte das Wissen und weiß genau, welcher Teil der Arbeit dir bleibt.</p>
+<p>Dies ist das erste von acht Büchern, und es ist die Einführung. Alles in dieser Reihe beruht auf der Fähigkeit, loszulassen, was nicht dein Eigentum ist, und zu behalten, was es ist.</p>
+<p><strong>Zentraler Erkenntnis: Loslassen fühlt sich wie Weisheit an. Es ist manchmal ein Fehler.</strong></p>
+<p><strong>Genauer betrachtet: Benenne die Art, bevor du loslässt. Wenn du sie nicht innerhalb von vier Sekunden benennen kannst, lässt du nicht los – du treibst dahin.</strong></p>
+<p><strong>Ziel: Was dein ist, zu halten; was nicht dein ist, loszulassen; und genau wissen, was du tust, bevor du es tust.</strong></p>
+<p>Diese Fähigkeit wurde geschrieben, bevor der Assistent existierte – und sie funktioniert immer noch. Was sich geändert hat, sind die Bedingungen und die Kosten, wenn man sie falsch anwendet. Friction hat früher einen Teil der Arbeit für dich erledigt, und jetzt wird bereits vor deiner Entscheidung eine warme Antwort entworfen, drei Versionen davon, jede eine Spur nachgiebiger als die letzte. Die Erkenntnis selbst muss sich nicht ändern. Du beobachtest weiterhin, was jemand wiederholt tut, denn wiederholtes Verhalten ist Datenmaterial, alles andere ist Rauschen. Was sich ändern muss, ist, dass das Werkzeug nun jenen Teil übernimmt, bei dem du vorgibt, etwas zu tun, und es schneller, als du bemerkst.</p>
+<p>Das Werkzeug kann die Nachricht entwerfen. Es kann dir aber nicht sagen, ob du sie gemeint hast.</p>
+<p>Loslassen fühlt sich wie Weisheit an. Es ist manchmal ein Fehler.</p>
+<p>Der Schritt ist derselbe. Die Art ist es nicht.</p>
+<p>Benenne die Art, bevor du loslässt. Der Diagnose-Test zeigt, ob die letzte Entscheidung im nützlichen Bereich lag. Er benennt die Art nicht für dich. Jemand drängt. Du trittst zurück. Du lässt ihn. Die Reibung sinkt, und du fühlst dich reif. Bei der richtigen Art von Problem ist das genau richtig – und eine der freiesten Dinge, die ein Mensch lernen kann. Bei der falschen Art hast du einfach etwas aufgegeben, das dir gehörte, und wirst später dafür zahlen, mit Z</p></div><div class="docpane" id="doc-ru"><h1>Пусть они, потом я</h1>
+<h3>Классификатор для контроля, избегания, границ и безопасности</h3>
+<p><em>Книга серии EdgeLoop</em></p>
+<p><strong>Автор: KJS</strong></p>
+<p><em>Автор, разработчик, учёный-данных, исследователь и ресторатор</em></p>
+<h2>Как пользоваться этой книгой</h2>
+<p><strong>Суть серии в одной строке.</strong> Есть два способа жить с ИИ. Старый — учиться ему и делать всё самому. Новый — заставлять его работать, не вникая в суть. Оба варианта проваливаются: первый делает вас устаревшим, второй оставляет вас без знаний, которые могли бы быть вашими. Каждая книга здесь учит среднему пути. Возьмите инструмент, сохраните знание и понимайте, какую часть работы вы берёте на себя.</p>
+<p>Это первая из восьми, и она — релиз. Вся серия строится на способности отпустить то, что не принадлежит вам держать, и сохранить то, что принадлежит.</p>
+<p><strong>Центральная мысль: Отпускание кажется мудростью. Иногда это ошибка.</strong></p>
+<p><strong>Ближе: Назовите тип до того, как отпустить. Если вы не можете назвать его за четыре секунды — вы не отпускаете, вы плывёте по течению.</strong></p>
+<p><strong>Цель: Держать своё, отпускать чужое и знать, что вы делаете, ещё до того, как это сделать.</strong></p>
+<p>Этот навык был сформулирован задолго до появления ассистентов — и он по-прежнему работает. Что изменилось, так это условия и цена ошибки. Раньше трение само выполняло часть работы, а теперь что-то уже пишет тёплый ответ до того, как вы решили, что чувствуете, три версии, каждая — более снисходительная, чем предыдущая. Ни одна часть самой идеи не должна меняться. Вы всё так же наблюдаете за тем, что человек делает снова и снова, потому что повторяющееся поведение — это данные, а всё остальное — шум. То, что нужно изменить, — это то, что раньше вы делали сами, притворяясь, а теперь инструмент делает это за вас, быстрее, чем вы успеваете заметить.</p>
+<p>Инструмент может набросать сообщение. Он не может сказать, правда ли вы это имели в виду.</p>
+<p>Отпускание кажется мудростью. Иногда это ошибка.</p>
+<p>Движение одно. Тип — другой.</p>
+<p>Назовите тип перед тем, как отпускать. Диагностик покажет, попал ли последний шаг в полезную зону. Он не назовёт тип за вас. Кто-то давит. Вы отступаете. Вы позволяете. Трение исчезает, и вы чувствуете зрелость. На подходящей проблеме — это абсолютно правильно, и это одна из самых освобождающих вещей, которые может научиться человек. На неподходящей — вы просто бросили то, что было вашим, и заплатите за это позже, с процентами, в валюте, обычно — время и доверие других людей, а также своё собственное.</p>
+<p>Совет «пусть будут», «перестань управлять тем, что не поддаётся контролю» — хороший совет. Но он неполный, и эта неполнота причиняет реальный ущерб, потому что не даёт инструкций,</p></div><div class="docpane" id="doc-ar" dir="rtl"><h1>دعهم، ثم أنا</h1>
+<h3>المُصنِّف للتحكم، والتجنب، والحدود، والأمان</h3>
+<p><em>كتاب من سلسلة EdgeLoop</em></p>
+<p><strong>بقلم ك ج س</strong></p>
+<p><em>كاتب، مطوّر، عالم بيانات، باحث، وصاحب مطعم</em></p>
+<h2>كيفية استخدام هذا الكتاب</h2>
+<p><strong>السلسلة في جملة واحدة.</strong> هناك طريقتان للعيش مع الذكاء الاصطناعي. الطريقة القديمة هي تعلّمها وإتمام العمل بنفسك. والطريقة الجديدة هي جعل الأمور تحدث دون أن تتعلمها على الإطلاق. كلا الطريقتين فاشلتان: الأولى تصبح بلا أهمية، والثانية تتركك بلا معرفة خلفك. كل كتاب في هذه السلسلة يعلم المسار الأوسط. اأخذ الأداة، واحتفظ بالمعرفة، وتعرّف على الجزء الذي يبقى مسؤوليتك أنت.</p>
+<p>هذا هو الأول من ثمانية كتب، وهو الإصدار الأول. كل شيء في هذه السلسلة يعتمد على قدرتك على التخلي عن ما ليس لك حمله، والحفاظ على ما هو لك.</p>
+<p><strong>الفكرة الأساسية: التخلي يشعرك بالحكمة. لكنه أحيانًا خطأ.</strong></p>
+<p><strong>أدق: سمّن النوع قبل أن تتخلّى. إذا لم تستطع تحديد نوعه خلال أربع ثوانٍ، فأنت لا تتخلّى، بل تطفو بلا هدف.</strong></p>
+<p><strong>الهدف: أن تمسك بما هو لك، وتتخلى 게 ما ليس لك، وأن تعرف أي واحد منهما تفعله قبل أن تفعله.</strong></p>
+<p>كان هذا المهارة مكتوبة قبل وجود المساعد، ولا تزال تعمل. ما تغير هو الشروط والتكلفة التي تنجم عن الخطأ. كانت الاحتكاك يُؤدي جزءًا من العمل لك سابقًا،而现在 شيء ما سيكتب الرد الدافئ قبل أن تقرر ما تشعر به، ثلاث نسخ منه، وكل واحدة أكثر تسامحًا من السابقة. لا يتطلب أي تغيير في الفكرة نفسها. ما زال عليك مراقبة ما يكرره الشخص مرارًا وتكرارًا، لأن السلوك المتكرر هو بيانات، وكل شيء آخر هو ضجيج. ما يجب أن يتغير هو أن الأداة ستؤدي الجزء الذي كنت تقود فيه التظاهر، وبسرعة أكبر مما يمكنك ملاحظته.</p>
+<p>الأداة يمكنها صياغة الرسالة. لكنها لا تستطيع إخبارك إن كنت تقصد ما قلته.</p>
+<p>التخلي يشعرك بالحكمة. لكنه أحيانًا خطأ.</p>
+<p>الحركة واحدة. النوع مختلف.</p>
+<p>سمّن النوع قبل أن تتخلّى. سيكون التشخيص واضحًا فيما إذا كان آخر تخلي يقع ضمن النطاق المفيد. لن يسمي لك النوع. أحد يدفع. أنت تبتعد. تدعه. ينخفض الاحتكاك، وتشعر بالنضج. في النوع الصحيح من المشكلة، هذا بالضبط ما ينبغي فعله، وهو أحد أكثر الأمور تحريرًا يمكن لشخص أن يتعلمه. أما في النوع الخاطئ، فقد أهملت شيئًا كان لك حمايته، وستدفع ثمن ذلك لاحقًا، بفائدة، بعملة تكون غالبًا وقت الآخرين وثقافتهم بالإضافة إلى وقتك أنت.</p>
+<p>نصيحة &quot;اترك الناس يكونون كما هم&quot;، و&quot;توقف عن إدارة ما لا يمكنك التحكم فيه&quot;، هي نصيحة جيدة. لكنها غير كاملة بطريقة تسبب ضررًا حقيقيًا، لأنها تأتي بدون تعليمات لتمييز النوعين المختلفين من المشكلات. لذلك يتعلم الناس التخلي ويطبّقونه في كل مكان. يتخلون عن حدود كانوا يجب أن يحتفظوا بها. يتخلون عن محادثات كانوا يتجنبونها. يتخلون عن مواقف لم يكن آمنًا تركها، ويسمون كل ذلك بكلمة واحدة: الهدوء. النتيجة هي شخص يخلط بين الانفصال والنمو، ولا يستطيع فهم لماذا تتكرر نفس المشاكل مرارًا وتكرارًا.</p>
+<p>هذا الكتاب يضيف التعليمات المفقودة. إنه أداة واحدة، وهي مصنّف، وتستخدمه قبل أن تتخلّى عن أي شيء. اذكر نوع الموقف</p></div><div class="docpane" id="doc-zh-cn"><h1>让他们，然后是我</h1>
+<h3>控制、回避、边界与安全的分类器</h3>
+<p><em>一部 EdgeLoop 作品</em></p>
+<p><strong>作者：KJS</strong></p>
+<p><em>作家、开发者、数据科学家、研究员兼餐厅经营者</em></p>
+<h2>如何使用本书</h2>
+<p><strong>本系列一句话概括。</strong> 面对人工智能，有两种生存方式。旧的方式是学习它，并亲自完成工作；新的方式是完全不学它，也能让事情发生。但两种方式都会失败：前者会变得无关紧要，后者则让你身后空无一物。这里的每一本书都在教中间路线——拿起工具，保留知识，清楚知道哪部分工作仍属于你。</p>
+<p>这是八部曲中的第一部，也是发布之作。整个系列的基础，在于能否放手那些不属于你的东西，同时守住真正属于你的部分。</p>
+<p><strong>核心洞见：放手看似智慧，实则有时是个错误。</strong></p>
+<p><strong>更进一步：在放手之前，请先命名类型。若四秒内无法说出是什么，那你不是在放手，而是在漂移。</strong></p>
+<p><strong>目标：掌握属于你的东西，释放不属于你的东西，并在行动前就清楚自己正在做什么。</strong></p>
+<p>这项能力在智能助手出现之前就已存在，至今依然有效。变化的是条件和犯错的成本。过去，摩擦本身会帮你做些筛选，而现在，一个温暖回复的草稿已在你尚未决定感受时悄然生成，甚至有三个版本，每个都比前一个更迁就、更妥协。洞察的本质无需改变——你依旧观察一个人反复的行为，因为重复行为才是数据，其余皆为噪音。需要改变的是，工具现在会替你完成“假装”的那部分，而且快到你根本来不及察觉。</p>
+<p>工具可以起草消息，却无法告诉你：你是否真心如此。</p>
+<p>放手看似智慧，实则有时是个错误。</p>
+<p>动作相同，类型不同。</p>
+<p>在放手前，请先命名类型。诊断将判断上一次放手是否落在有效范围内。它不会替你命名类型。有人施压，你后退一步，选择让他们走。摩擦消失，你感觉成熟了。在正确的问题上，这完全正确，也是人能学到的最自由的事之一。但在错误的问题上，你只是放弃了本该由你守护的东西，未来将为此付出代价，利息以他人的时间与信任，以及你自己的时间来偿还。</p>
+<p>“让人做自己，停止管理你无法控制的事”这条建议很好。但它不完整，且会造成实际伤害，因为它没有提供区分两类问题的方法。于是人们学会了放手，并将其用在所有地方。他们放下了本应坚守的限制，放过了本该面对的对话，放任了本就不该逃离的情境，却把这一切都称为同一个平静的词。结果是一个人误把冷漠当作成长，却无法理解为何同样的问题总是一再回来。</p>
+<p>本书补上了缺失的指引。它只有一件工具——一个分类器——你在任何放手之前都要运行它。请先判断自己处于四种情境中的哪一种。</p>
+<p><strong>控制。</strong> 不属于你。放手。</p>
+<p><strong>回避。</strong> 属于你，只是搁置了。做一件小事即可。</p>
+<p><strong>边界。</strong> 属于你，必须守住。说一次即可。</p>
+<p><strong>安全。</strong> 停止。这不是放手。</p>
+<p>四种类型，四种应对，一次停顿。诊断评估的是上一次停顿的质量。改变，由你完成。</p>
+<h3>四种类型的实践应用</h3>
+<p><strong>控制。</strong> 一位知名科技创始人遭遇大量文件泄露，涉及他早年曾公开承认的重大失误并深表悔意的关系。文件一旦流出，任何试图掌控叙事的努力都已超出他的控制范围。对应的行动是放弃叙事操控，仅附加一句清晰陈述事实的声明。诊断会在事实公开、任何举动都无法改变局面的瞬间，判定此为控制类情形。</p>
+<p><strong>回避。</strong> 在2026年多位管理者及高绩效者账户中，普遍存在一种模式：自动化周报或状态更新持续运行数月，而当事人始终称之为“授权”。关于哪个数字才真正重要，那十五分钟的判断权始终握在他们手中。真正的“我”只需打开草稿，标记出唯一需要关注的一行。当同一任务反复出现，伴随不安而非完成感时，诊断即标记为回避型案例。</p>
+<p><strong>边界。</strong> 在2026年管理者指导手册中，常见一种情况：同事或利益相关方请求突破既定的流程或优先级规则。流程归属持有者本人。回应方式只需一句话：“此规则适用于所有人。”之后无论对方再次提出请求，均不再重复。当同一请求在首次明确表态后再度出现，诊断即判定为边界类情形。</p>
+<p><strong>安全。</strong> 在2026年职场报告中，一种反复出现的动态是：管理者以关心员工安全或承受力为由，强行推翻员工对自己能否继续工作的判断。对应行动是坚决暂停：个人声明的极限，不容他人焦虑重新谈判。当此类模式已出现一次，且代价落在个人声誉或时间上时，诊断即标记为安全类情形。</p>
+<p>以上是四个具体案例，每类一个，均来自可识别的2026年现实模式，而非某位特定人物的经历。它们并非证明相同的分类会为你带来相同结果。而是证明：在你必须为自己命名之前，这种类型早已能在真实情境中被准确识别。</p>
+<h2>第一章：停止在不可控之事上耗尽自己</h2>
+<p>第四天，利益相关方更改了验收标准。这是本轮冲刺的第三次。消息在早上7点52分发到群聊中，赶在站会之前，语气看似只是个小小的澄清。当玛雅读完第二遍时，助手已经为她草拟好了三条回复。每一条都语气温和，无非是“当然可以”“我们完全可以把这点加进来”之类的话。</p>
+<p>她的拇指已滑向最顺手的一条，却突然停住了。</p>
+<p>她没有立刻发送任何内容。她先问了一个问题：这到底是什么情况？不是如何让它消失，而是——到底是什么情况？</p>
+<p>她无法控制对方反复改变主意。那是他的事，无论她怎么回应，都无法修复他内心那个不断重新打开旧问题的部分。但她能控制的是：团队是否在截止后默默接受第三次范围变更，而毫无异议。这一部分是她的责任。于是她将那种令人不适的感受拆解成两个真实的部分。她放下了第一个，紧握了第二个。只回了一句话：“标准已于周二锁定，现在提出的变化需移至下一周期，我们很乐意在那里优先处理。” 他继续施压，她重复那句话，一字未改。摩擦感依然消散了——这让她感到意外，因为她过去一年一直以为，自己的职责就是防止这种摩擦。</p>
+<p>判断权在她手中。诊断工具会显示，你最近的决策中是否存在类似释放的情况，但不会告诉你具体属于哪一类。</p>
+<p>旧模式的代价，她从未真正算过。夜晚加班重建本不该变动的工作；一种低层次的怨气，她一直归因为“团队合作者”的表现；一个自我设定的标准，却一次次悄悄搁置——因为暂停它，当下更快，而“当下”永远在眼前。</p>
+<p>有一种行为看起来像智慧，实则常常是个错误。那就是“放手”。有人施压，你后退一步，任由他们去，不适感便随之消散。在真正属于“可控”的问题上，这完全正确，也是人所能学到的最自由的事之一。但在错误的情境下，你只是放弃了本该</p></div><div class="docpane" id="doc-ja"><h1>他人に任せる、そして自分に帰る</h1>
+<h3>コントロール・回避・境界・安全の分類基準</h3>
+<p><em>An EdgeLoop Book</em></p>
+<p><strong>著者：KJS</strong></p>
+<p><em>著者、開発者、データサイエンティスト、研究者、レストラン経営者</em></p>
+<h2>この本の使い方</h2>
+<p><strong>シリーズの核となる一文。</strong> AIと生きるには二通りの方法がある。古いやり方は、AIを学んで自分で作業を行うこと。新しいやり方は、一切学ばずにそれを実現させることだ。どちらも失敗する。前者は時代遅れになり、後者は背後に何も知識が残らない。このシリーズのすべてが教えるのは中間の道である。ツールを使いながらも知識を保持し、自分の仕事のどの部分が自分に残っているのかを知ること。</p>
+<p>これは8冊構成のシリーズの第1冊であり、リリース版である。このシリーズ全体は、「あなたが持つべきものから手放す力」と「あなたが保持すべきものを持つ力」の両方に依拠している。</p>
+<p><strong>核心的な洞察：手放すことは知恵のように感じる。しかし、それは時に誤りである。</strong></p>
+<p><strong>さらに深く：手放す前に、そのタイプを名付けよ。4秒以内に名付けられないなら、あなたは手放しているのではなく、ただ漂っているだけだ。</strong></p>
+<p><strong>目標：自分が持つべきものをしっかり握り、持たないものを手放し、その行為をする前に、それがどちらの種類の行動かを正確に把握すること。</strong></p>
+<p>このスキルはアシスタントが登場する前から存在していたものであり、今でも有効だ。変わったのは、その誤りの条件とコストだけだ。かつては摩擦が一部の働きを代行してくれていたが、今や、あなたが感情を決める前に、すでに三つのバージョンの温かい返信が自動で作られてしまう。どれも前よりさらに配慮深いものだ。洞察そのものの変更は必要ない。人は繰り返し行う行動こそがデータであり、それ以外はノイズであることを常に見守ればよい。変わったのは、ツールが「仮装する」部分を代行し、あなたが気づく前に終わってしまうということだ。</p>
+<p>ツールはメッセージを草案できる。だが、それが本当にあなたが意図したものかどうかは教えてくれない。</p>
+<p>手放すことは知恵のように感じる。しかし、それは時に誤りである。</p>
+<p>動きは同じ。種類は違う。</p>
+<p>手放す前に、そのタイプを名付けよ。診断ツールは、前の手放しが有用な範囲内だったかを示す。タイプ自体は名付けない。誰かが押し寄せてくる。あなたは後退する。あなたは彼らに任せる。摩擦が減り、成熟した気分になる。正しいタイプの問題では、まさにこれで正解であり、人間が学べる最も解放的なことの一つだ。しかし、間違ったタイプでは、あなたが保持すべきものを無理に手放しただけであり、後で利息を含めて支払うことになる。その支払いの対価は、通常、他者の時間と信頼だけでなく、あなたのものさえも含まれる。</p>
+<p>他人に任せること、自分ではコントロールできないことに介入をやめること――これは良い助言だ。しかし、実際には深刻な欠落を伴っている。なぜなら、この助言には「二つの問題の違いを見分ける方法」がまったく含まれていないからだ。そのため人々は「手放す」という行動をどこでも適用してしまう。保持すべき限界を手放す。避け続けていた会話を手放す。安全に立ち去るべきではない状況を手放す。そしてこれらすべてを、同じ「落ち着いた」という言葉で呼ぶ。結果として、人は「無関心＝成長」と勘違いし、なぜ同じ問題が繰り返されるのか理解できなくなってしまう。</p>
+<p>本書は、この欠けている指示を補完する。それは一つの道具、分類器であり、何かを手放す前に使う。あなたが直面している状況が、四つのうちどれに該当するかを明確にせよ。</p>
+<p><strong>コントロール。</strong> あなたのものではない。手放せ。</p>
+<p><strong>回避。</strong> あなたのもの。一旦保留。小さな一歩を踏み出せ。</p>
+<p><strong>境界。</strong> あなたのもの。一度だけ明確に表明せよ。</p>
+<p><strong>安全。</strong> 停止。手放すのではない。</p>
+<p>四つのタイプ。四つの行動。一つの停頓。診断は前の停頓を評価する。変化はあなた次第だ。</p>
+<h3>実践における四つのタイプ</h3>
+<p><strong>コントロール。</strong> ある有名なテクノロジー創業者が、過去の関係について公に「重大な過ちであり、悔いている」と述べた後、その関係に関する文書が流出した。文書が公開された瞬間、彼が物語を管理しようとするあらゆる試みは、もはや彼のコントロール外となった。適切な対応は、物語の管理を手放し、事実をシンプルに一文で述べることだった。診断ツールは、事実が公になった瞬間、彼の行動が何の影響も与えられない状態に達した時点で、コントロール系と判定する。</p>
+<p><strong>回避。</strong> 2026年のマネージャーおよびハイパフォーマーのアカウントを分析すると、毎週自動で生成されるレポートやステータス更新が数ヶ月にわたり継続していた。本人はこれを「委任」と呼んでいたが、実際にどの数字が重要かという判断の15分間は、常に彼自身の責任下にあった。Then Me（その後の自分）は、草案を開き、注意を要する一行だけをマークしていた。診断ツールは、同じタスクが不快感とともに何度も戻ってくる場合に、このケースを警告する。</p>
+<p><strong>境界。</strong> 2026年のマネージャーガイドラインでは、頻繁に見られるパターンとして、同僚やステークホルダーが既存の受付プロセスや優先順位ルールに対する例外を求めることがあった。そのプロセスは、それを管理している人のものだった。対応は、一文だけの声明で「ルールは全員に適用される」と言い切り、その後再び要求があっても繰り返さないことだった。診断ツールは、その一文を一度表明した後、同じ要求が再び来る場合を、境界系と判定する。</p>
+<p><strong>安全。</strong> 2026年の職場報告において、繰り返し見られた動態は、マネージャーが従業員の安全や能力を心配する名目で、本人の判断を無視して働けるかどうかを決定することだった。適切な対応は、ハードストップだった。本人が表明した限界は、他人の不安によって再交渉されない。診断ツールは、そのパターンが一度以上確認され、そのコストが本人の立場や時間に影響を与える場合を、安全系とマークする。</p>
+<p>これらは四つの実例であり、それぞれのタイプごとに一つずつ。いずれも特定の人物ではな</p></div><div class="docpane" id="doc-th"><h1>ปล่อยให้พวกเขา แล้วตามมาทีหลัง</h1>
+<h3>ตัวจำแนกสำหรับการควบคุม การหลีกเลี่ยง เส้นแบ่ง และความปลอดภัย</h3>
+<p><em>หนังสือ EdgeLoop</em></p>
+<p><strong>โดย KJS</strong></p>
+<p><em>ผู้เขียน นักพัฒนา นักวิทยาศาสตร์ข้อมูล นักวิจัย และเจ้าของร้านอาหาร</em></p>
+<h2>วิธีใช้หนังสือเล่มนี้</h2>
+<p><strong>สาระสำคัญของซีรีส์ในประโยคเดียว:</strong> มีสองวิธีในการใช้ AI วิธีเก่าคือเรียนรู้มันและทำงานด้วยตนเอง วิธีใหม่คือทำให้มันเกิดขึ้นโดยไม่ต้องเรียนรู้เลย ทั้งสองแบบล้มเหลว: แบบแรกกลายเป็นสิ่งที่ไม่เกี่ยวข้อง แบบที่สองทิ้งไว้ซึ่งไม่มีความรู้ใดๆ อยู่เบื้องหลัง ทุกเล่มในชุดนี้สอนทางตรงกลาง ใช้เครื่องมือ แต่ยังคงความรู้ไว้ และรู้ว่าส่วนไหนของงานยังคงเป็นของคุณ</p>
+<p>เล่มนี้เป็นเล่มแรกจากแปดเล่ม และเป็นการเปิดตัว ทุกอย่างในซีรีส์นี้พึ่งพาความสามารถในการปล่อยสิ่งที่ไม่ใช่ของคุณ และยังคงสิ่งที่เป็นของคุณไว้</p>
+<p><strong>ข้อคิดหลัก: การปล่อยวางรู้สึกเหมือนปัญญา แต่บางครั้งก็เป็นความผิดพลาด</strong></p>
+<p><strong>ใกล้ชิดกว่านั้น: ระบุประเภทก่อนจะปล่อยวาง หากคุณไม่สามารถระบุได้ภายในสี่วินาที คุณไม่ได้ปล่อยวาง คุณแค่ลอยไปเฉยๆ</strong></p>
+<p><strong>เป้าหมาย: ถือสิ่งที่เป็นของคุณ ปล่อยสิ่งที่ไม่ใช่ของคุณ และรู้ว่าคุณกำลังทำอะไรอยู่ก่อนทำมัน</strong></p>
+<p>ทักษะนี้ถูกเขียนขึ้นมาก่อนที่จะมีผู้ช่วย แต่ยังคงใช้งานได้ดีอยู่ สิ่งที่เปลี่ยนไปคือสภาพแวดล้อมและความเสียหายหากทำผิด แรงต้านเคยช่วยงานบางส่วนให้คุณ แต่ตอนนี้เครื่องมือจะเขียนคำตอบอุ่นใจล่วงหน้าก่อนที่คุณจะตัดสินใจว่าคุณรู้สึกอย่างไร สามเวอร์ชัน แต่ละเวอร์ชันยิ่งยอมรับมากขึ้นเรื่อยๆ ไม่มีอะไรในข้อคิดต้องเปลี่ยนแปลง คุณยังคงสังเกตพฤติกรรมที่คนทำซ้ำๆ เพราะพฤติกรรมที่ซ้ำๆ คือข้อมูล ส่วนอื่นๆ คือเสียงรบกวน แต่สิ่งที่ต้องเปลี่ยนคือ เครื่องมือจะทำส่วนที่คุณเคยเล่นบทบาท และทำมันเร็วกว่าที่คุณจะสังเกตเห็น</p>
+<p>เครื่องมือสามารถเขียนข้อความได้ แต่ไม่สามารถบอกคุณได้ว่าคุณหมายความจริงใจหรือไม่</p>
+<p>การปล่อยวางรู้สึกเหมือนปัญญา แต่บางครั้งก็เป็นความผิดพลาด</p>
+<p>การเคลื่อนไหวเหมือนกัน แต่ประเภทไม่เหมือนกัน</p>
+<p>ระบุประเภทก่อนปล่อยวาง ตัวตรวจสอบจะแสดงว่าการปล่อยครั้งสุดท้ายอยู่ในช่วงที่มีประโยชน์หรือไม่ จะไม่ช่วยระบุประเภทให้คุณเอง ใครบางคนผลัก คุณถอยหลัง คุณปล่อยให้เขา แรงต้านลดลง คุณรู้สึกมีวุฒิภาวะ บนปัญหาประเภทที่เหมาะสม นั่นคือสิ่งที่ถูกต้องที่สุด และเป็นหนึ่งในสิ่งที่ปลดปล่อยที่สุดที่คนหนึ่งอาจเรียนรู้ได้ แต่บนปัญหาประเภทผิด คุณเพียงแค่ทิ้งสิ่งที่ควรจะถือไว้ แล้วจะต้องจ่ายราคาในอนาคต พร้อมดอกเบี้ย ในสกุลเงินที่มักจะเป็นเวลาและศรัทธาของผู้อื่น รวมถึงของคุณเองด้วย</p>
+<p>คำแนะนำให้ปล่อยให้คนอื่นเป็นตัวของตัวเอง หยุดจัดการสิ่งที่คุณควบคุมไม่ได้ เป็นคำแนะนำที่ดี แต่ก็ไม่สมบูรณ์ในแบบที่ก่อให้เกิดความเสียหายจริง เพราะมันไม่มีคำชี้แจงวิธีแยกแยะสองประเภทของปัญหานี้ ดังนั้นคนหลายคนเรียนรู้การปล่อยวางแล้วนำไปใช้ทุกที่ พวกเขาปล่อยสิ่งที่ควรควบคุม ปล่อยการสนทนาที่พวกเขาหลีกเลี่ยงมาโดยตลอด ปล่อยสถานการณ์ที่ไม่เคยปลอดภัยพอที่จะถอนตัว แล้วเรียกทั้งหมดนั้นด้วยคำว่าเดียวกัน คือ “ความสงบ” ผลลัพธ์คือ คนที่</p></div><div class="docpane" id="doc-id"><h1>Biarkan Mereka, Lalu Saya</h1>
+<h3>Klasifikasi untuk Kendali, Menghindar, Batas, dan Keamanan</h3>
+<p><em>Buku EdgeLoop</em></p>
+<p><strong>Oleh KJS</strong></p>
+<p><em>Penulis, Pengembang, Ilmuwan Data, Peneliti, dan Pemilik Restoran</em></p>
+<h2>Cara menggunakan buku ini</h2>
+<p><strong>Serinya dalam satu kalimat.</strong> Ada dua cara hidup dengan kecerdasan buatan. Cara lama adalah mempelajarinya dan melakukan pekerjaan sendiri. Cara baru adalah membuat semuanya terjadi tanpa pernah mempelajarinya sama sekali. Keduanya gagal: yang pertama menjadi tidak relevan, yang kedua meninggalkan Anda tanpa pengetahuan di belakang. Setiap buku di sini mengajarkan jalan tengah. Ambil alatnya, pertahankan pengetahuannya, dan ketahui bagian pekerjaan mana yang tetap menjadi milik Anda.</p>
+<p>Ini adalah buku pertama dari delapan, dan merupakan rilis pertama. Semua yang ada dalam seri ini bergantung pada kemampuan melepaskan apa yang bukan milik Anda, serta mempertahankan apa yang benar-benar milik Anda.</p>
+<p><strong>Inti utama: Melepas terasa seperti kebijaksanaan. Kadang-kadang itu kesalahan.</strong></p>
+<p><strong>Lebih dekat: Sebutkan jenisnya sebelum Anda melepaskan. Jika Anda tidak bisa menyebutkannya dalam empat detik, Anda bukan sedang melepaskan—Anda sedang mengambang.</strong></p>
+<p><strong>Tujuan: Memegang yang menjadi milik Anda, melepaskan yang bukan, dan tahu mana yang sedang Anda lakukan sebelum melakukannya.</strong></p>
+<p>Keterampilan ini ditulis sebelum asisten muncul, dan masih berfungsi. Yang berubah hanyalah kondisi dan biaya jika salah melakukannya. Dulu gesekan (friction) membantu sebagian pekerjaan, kini sesuatu akan menulis balasan hangat sebelum Anda sempat memutuskan perasaan Anda, tiga versi yang masing-masing lebih mengalah daripada sebelumnya. Tidak ada yang perlu berubah dari inti kebijaksanaan ini. Anda tetap mengamati apa yang orang lakukan berulang kali, karena perilaku berulang adalah data, dan segala hal lain hanyalah kebisingan. Yang harus berubah adalah alat kini melakukan bagian di mana Anda pura-pura, dan melakukannya lebih cepat dari yang Anda sadari.</p>
+<p>Alat bisa merancang pesan. Tapi tidak bisa memberitahu Anda apakah Anda benar-benar bermaksud melakukannya.</p>
+<p>Melepas terasa seperti kebijaksanaan. Kadang-kadang itu kesalahan.</p>
+<p>Gerakannya sama. Jenisnya tidak.</p>
+<p>Sebutkan jenisnya sebelum Anda melepaskan. Diagnostik akan menunjukkan apakah pelepasan terakhir berada dalam rentang yang bermanfaat. Diagnostik tidak akan menyebutkan jenisnya untuk Anda. Seseorang mendorong. Anda mundur. Anda biarkan mereka. Gesekan berkurang dan Anda merasa dewasa. Pada masalah jenis yang tepat, itu benar-benar tepat, dan merupakan salah satu hal paling membebaskan yang bisa dipelaja</p></div>
+</div>
+
+<h2>5. Google Ultra CCU Usage and Unit Economics</h2>
+<div class="card">
+  <div class="kpis">
+    <div class="kpi"><span class="mute">Total Project CCU</span><b class="ok">48.07 CCU</b><span class="mute">8 completed G4 VMs (287 min)</span></div>
+    <div class="kpi"><span class="mute">Translation Compute</span><b>38.69 CCU</b><span class="mute">231 min across 20 languages</span></div>
+    <div class="kpi"><span class="mute">QA Retry + Back-Trans</span><b>9.38 CCU</b><span class="mute">56 min (140 retry + 60 BT)</span></div>
+    <div class="kpi"><span class="mute">Cost per Book</span><b class="ok">0.276 CCU</b><span class="mute">4.64 CCU per 1M words</span></div>
+    <div class="kpi"><span class="mute">Ultra Account Balance</span><b>2,491.42 CCU</b><span class="mute">Started at 2,584.55 CCU (1.9% used)</span></div>
+  </div>
+  <p class="mute">Failed Colab 412 and 503 capacity retries did not allocate a VM and billed 0.00 CCU. Running 6-language batches cut cost to 0.22 to 0.25 CCU per book, compared with 0.30 to 0.43 CCU per book for 2-language batches.</p>
+  <table>
+    <tr><th>Job</th><th>Colab Session</th><th>Window</th><th>Runtime</th><th>Rate</th><th>CCU</th></tr>
+    <tr><td>Batch 02, de and it (14 books)</td><td><code>job-1126-005759-75854</code></td><td>00.58 &rarr; 01.33</td><td>36 min</td><td>10.05 CCU/h</td><td class='ok'><b>6.03 CCU</b></td></tr>
+    <tr><td>Batch 03, pt and pt-br (14 books)</td><td><code>job-1126-013350-33497</code></td><td>01.33 &rarr; 01.58</td><td>25 min</td><td>10.05 CCU/h</td><td class='ok'><b>4.19 CCU</b></td></tr>
+    <tr><td>Batch 04, nl and pl (14 books)</td><td><code>job-1126-015838-52373</code></td><td>01.58 &rarr; 02.23</td><td>25 min</td><td>10.05 CCU/h</td><td class='ok'><b>4.19 CCU</b></td></tr>
+    <tr><td>Batch 01, es and fr (14 books)</td><td><code>job-1126-024108-87101</code></td><td>02.41 &rarr; 03.07</td><td>27 min</td><td>10.05 CCU/h</td><td class='ok'><b>4.52 CCU</b></td></tr>
+    <tr><td>Mega-Batch 05, ru, uk, ar, fa, zh-cn, zh-tw (42 books)</td><td><code>job-1126-022326-75150</code></td><td>02.23 &rarr; 03.17</td><td>55 min</td><td>10.05 CCU/h</td><td class='ok'><b>9.21 CCU</b></td></tr>
+    <tr><td>Mega-Batch 06, ja, ko, id, vi, th, tr (42 books)</td><td><code>job-1126-030746-3641</code></td><td>03.07 &rarr; 04.10</td><td>63 min</td><td>10.05 CCU/h</td><td class='ok'><b>10.55 CCU</b></td></tr>
+    <tr><td>QA Retry Pass, 140 flagged chunks</td><td><code>job-1126-041133-42515</code></td><td>04.11 &rarr; 04.47</td><td>37 min</td><td>10.05 CCU/h</td><td class='ok'><b>6.20 CCU</b></td></tr>
+    <tr><td>Back-Translation Audit, 60 chunks (20 langs)</td><td><code>job-1126-044800-62594</code></td><td>04.48 &rarr; 05.06</td><td>19 min</td><td>10.05 CCU/h</td><td class='ok'><b>3.18 CCU</b></td></tr>
+    <tr style='border-top:2px solid var(--acc)'><td><b>TOTAL (8 G4 Jobs)</b></td><td class='mute'>Translation 38.69 CCU (231m) &middot; QA and BT 9.38 CCU (56m)</td><td><b>4.78 G4-h</b></td><td><b>287 min</b></td><td>10.05 CCU/h</td><td class='ok'><b>48.07 CCU</b></td></tr>
+  </table>
+</div>
+
+<h2>6. Back-Translation Semantic Fidelity</h2>
+<div class="card">
+  <p>60 sampled chunks &middot; Average semantic similarity <b class='ok'>0.6569</b> &middot; Lowest score <b>0.4874</b></p>
+</div>
+
+<script>
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.docpane').forEach(p=>p.classList.toggle('on',p.id==='doc-'+b.dataset.l));
+});
+</script>
+</main></body></html>
